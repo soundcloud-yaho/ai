@@ -1,0 +1,1 @@
+# [CI] main 푸시 시 Docker 빌드 -> ECR 푸시 (태그: git SHA 앞 7자리)

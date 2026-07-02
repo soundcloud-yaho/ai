@@ -1,0 +1,1 @@
+# [의존성] neuralprophet, scikit-learn, prometheus-api-client, boto3 — 버전 고정
