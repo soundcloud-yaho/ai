@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# 환경 변수 / 시크릿
+.env
+.env.*
+*.env
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# ML 학습·추론 산출물 (CronJob/로컬 실행 시 생성)
+neuralprophet/output/
+neuralprophet/lightning_logs/
+*.np
+
+# 로컬 테스트용 Prometheus 스냅샷 (Prometheus에서 조회하거나 직접 준비)
+neuralprophet/test_dataset.json
+
+# 실험 추적 (사용 시)
+mlruns/
+wandb/
+.neptune/
