@@ -17,7 +17,7 @@ PROMETHEUS_URL = os.environ.get(
 )
 PROMETHEUS_QUERY = os.environ.get(
     "PROMETHEUS_QUERY",
-    'sum(rate(http_requests_total{namespace="worldcup",service="result-api"}[5m]))',
+    'sum(rate(http_requests_total{namespace="app",service="backend"}[5m]))',
 )
 TRAIN_TIMEZONE = os.environ.get("TRAIN_TIMEZONE", "Asia/Seoul")
 TRAIN_LOOKBACK_DAYS = int(os.environ.get("TRAIN_LOOKBACK_DAYS", "30"))
@@ -25,7 +25,7 @@ TRAIN_DATA_START = os.environ.get("TRAIN_DATA_START")  # 예: 2026-06-01T00:00:0
 
 PUSHGATEWAY_URL = os.environ.get(
     "PUSHGATEWAY_URL",
-    "http://kube-prometheus-stack-prometheus-pushgateway.monitoring.svc:9091",
+    "http://pushgateway-prometheus-pushgateway.monitoring.svc:9091",
 )
 PUSHGATEWAY_JOB = os.environ.get("PUSHGATEWAY_JOB", "neuralprophet-predict")
 PUSHGATEWAY_INSTANCE = os.environ.get("PUSHGATEWAY_INSTANCE", "neuralprophet")
