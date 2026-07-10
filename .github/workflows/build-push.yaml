@@ -1,1 +1,52 @@
-# [CI] main 푸시 시 Docker 빌드 -> ECR 푸시 (태그: git SHA 앞 7자리)
+# [CI] master 푸시 시 AI Docker 이미지 빌드 -> ECR 푸시
+# 이미지 태그는 Git Commit SHA 앞 7자리를 사용
+
+name: Build and Push AI Image to ECR
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Repository 코드 가져오기
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # GitHub Secrets에 등록한 AWS Access Key로 인증
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      # Amazon ECR 로그인
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Dockerfile 존재 여부 확인
+      - name: Check Dockerfile
+        run: test -f Dockerfile
+
+      # AI Docker 이미지 빌드 및 ECR Push
+      - name: Build and Push AI Image
+        shell: bash
+        run: |
+          IMAGE="201243087060.dkr.ecr.ap-northeast-2.amazonaws.com/soundcloud-prod/ai"
+          TAG="${GITHUB_SHA::7}"
+
+          echo "AI Image: ${IMAGE}:${TAG}"
+
+          docker build \
+            -t "${IMAGE}:${TAG}" \
+            .
+
+          docker push "${IMAGE}:${TAG}"
