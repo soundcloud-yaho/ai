@@ -1,0 +1,55 @@
+# Git / GitHub
+.git
+.gitignore
+.github
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+*.log
+*.tmp
+tmp/
+
+# Test and coverage files
+tests/
+.coverage
+htmlcov/
+
+# Locally generated AI artifacts
+models/
+artifacts/
+outputs/
+checkpoints/
+
+# Local datasets
+data/
+*.csv
+*.parquet
+
+# Docker-related local files
+docker-compose*.yml
+
+# Documentation
+README.md

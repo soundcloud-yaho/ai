@@ -1,1 +1,11 @@
 # [의존성] neuralprophet, scikit-learn, prometheus-api-client, boto3 — 버전 고정
+
+neuralprophet==0.9.0
+scikit-learn==1.9.0
+prometheus-api-client==0.7.2
+boto3==1.43.51
+numpy==1.26.4
+pandas==2.2.3
+matplotlib==3.9.4
+plotly==6.9.0
+plotly-resampler==0.11.0
