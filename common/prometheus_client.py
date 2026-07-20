@@ -20,8 +20,11 @@ from typing import Any  # dict 등 유연한 타입 표기
 from urllib.error import HTTPError, URLError  # HTTP/네트워크 오류 처리
 from urllib.parse import urlencode  # query string 인코딩
 from urllib.request import urlopen  # 표준 라이브러리 HTTP GET
-from zoneinfo import ZoneInfo  # IANA 타임존(Asia/Seoul 등) 처리
-
+#from zoneinfo import ZoneInfo  # IANA 타임존(Asia/Seoul 등) 처리
+try:
+    from zoneinfo import ZoneInfo          # Python 3.9+
+except ImportError:
+    from backports.zoneinfo import ZoneInfo # Python 3.8 폴백
 
 def _to_utc(dt: datetime) -> datetime:
     """aware datetime을 UTC로 변환한다."""
