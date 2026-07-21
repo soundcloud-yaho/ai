@@ -1,0 +1,37 @@
+{
+  "pod_name": "backend",
+  "current": {
+    "cpu_request": "200m",
+    "cpu_limit": "1000m",
+    "mem_request": "256Mi",
+    "mem_limit": "512Mi"
+  },
+  "recommendation": {
+    "pod_name": "backend",
+    "cpu": {
+      "p50": "212m",
+      "p90": "333m",
+      "p99": "349m",
+      "recommended_request": "419m",
+      "recommended_limit": "699m"
+    },
+    "memory": {
+      "p50": "208Mi",
+      "p90": "289Mi",
+      "p99": "299Mi",
+      "recommended_request": "359Mi",
+      "recommended_limit": "599Mi"
+    },
+    "note": "자동 반영 아님 — 운영자 검토 후 k8s/manifests/backend/deployment.yaml에 수동 적용하세요."
+  },
+  "cpu_stats": {
+    "p50": 0.212182,
+    "p90": 0.333572,
+    "p99": 0.349687
+  },
+  "mem_stats": {
+    "p50": 218230866.2,
+    "p90": 303088554.272727,
+    "p99": 314353959.670886
+  }
+}
