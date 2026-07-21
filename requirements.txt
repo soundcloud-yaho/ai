@@ -1,3 +1,5 @@
+# [의존성] neuralprophet, scikit-learn, prometheus-api-client, boto3 — 버전 고정
+#  Python 3.8 기준으로 통일
 numpy==1.24.4
 pandas==2.0.3
 scikit-learn==1.3.2
