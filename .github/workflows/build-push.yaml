@@ -1,5 +1,6 @@
 # [CI] master 푸시 시 AI Docker 이미지 빌드 -> ECR 푸시
 # 이미지 태그는 Git Commit SHA 앞 7자리를 사용
+# Buildx 캐시를 활용하여 무거운 Python 의존성 레이어 재사용
 
 name: Build and Push AI Image to ECR
 
@@ -10,6 +11,9 @@ on:
 
 permissions:
   contents: read
+
+env:
+  ECR_PREFIX: 201243087060.dkr.ecr.ap-northeast-2.amazonaws.com/soundcloud-prod
 
 jobs:
   build-and-push:
@@ -36,17 +40,27 @@ jobs:
       - name: Check Dockerfile
         run: test -f Dockerfile
 
-      # AI Docker 이미지 빌드 및 ECR Push
-      - name: Build and Push AI Image
+      # GitHub Actions 캐시를 사용할 수 있도록 Docker Buildx 설정
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Git Commit SHA 앞 7자리를 이미지 태그로 설정
+      - name: Set Image Tag
+        id: image
         shell: bash
         run: |
-          IMAGE="201243087060.dkr.ecr.ap-northeast-2.amazonaws.com/soundcloud-prod/ai"
           TAG="${GITHUB_SHA::7}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "AI Image: ${ECR_PREFIX}/ai:${TAG}"
 
-          echo "AI Image: ${IMAGE}:${TAG}"
-
-          docker build \
-            -t "${IMAGE}:${TAG}" \
-            .
-
-          docker push "${IMAGE}:${TAG}"
+      # AI Docker 이미지 빌드 및 ECR Push
+      - name: Build and Push AI Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.ECR_PREFIX }}/ai:${{ steps.image.outputs.tag }}
+          cache-from: type=gha,scope=soundcloud-ai
+          cache-to: type=gha,mode=max,scope=soundcloud-ai
