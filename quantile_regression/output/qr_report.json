@@ -1,37 +1,169 @@
 {
-  "pod_name": "backend",
-  "current": {
-    "cpu_request": "200m",
-    "cpu_limit": "1000m",
-    "mem_request": "256Mi",
-    "mem_limit": "512Mi"
-  },
-  "recommendation": {
-    "pod_name": "backend",
-    "cpu": {
-      "p50": "212m",
-      "p90": "333m",
-      "p99": "349m",
-      "recommended_request": "419m",
-      "recommended_limit": "699m"
+  "lookback_days": 7,
+  "recommendations": {
+    "backend": {
+      "pod_name": "backend",
+      "cpu": {
+        "p50": "192m",
+        "p90": "314m",
+        "p99": "348m",
+        "recommended_request": "418m",
+        "recommended_limit": "697m",
+        "used_segment": "match",
+        "match_samples": 108
+      },
+      "memory": {
+        "p50": "1Mi",
+        "p90": "1Mi",
+        "p99": "1Mi",
+        "recommended_request": "1Mi",
+        "recommended_limit": "1Mi",
+        "used_segment": "match",
+        "match_samples": 108
+      },
+      "note": "자동 반영 아님 — 운영자 검토 후 수동 적용하세요."
     },
-    "memory": {
-      "p50": "208Mi",
-      "p90": "289Mi",
-      "p99": "299Mi",
-      "recommended_request": "359Mi",
-      "recommended_limit": "599Mi"
+    "sync-matches": {
+      "pod_name": "sync-matches",
+      "cpu": {
+        "p50": "192m",
+        "p90": "314m",
+        "p99": "348m",
+        "recommended_request": "418m",
+        "recommended_limit": "697m",
+        "used_segment": "match",
+        "match_samples": 108
+      },
+      "memory": {
+        "p50": "1Mi",
+        "p90": "1Mi",
+        "p99": "1Mi",
+        "recommended_request": "1Mi",
+        "recommended_limit": "1Mi",
+        "used_segment": "match",
+        "match_samples": 108
+      },
+      "note": "자동 반영 아님 — 운영자 검토 후 수동 적용하세요."
     },
-    "note": "자동 반영 아님 — 운영자 검토 후 k8s/manifests/backend/deployment.yaml에 수동 적용하세요."
-  },
-  "cpu_stats": {
-    "p50": 0.212182,
-    "p90": 0.333572,
-    "p99": 0.349687
-  },
-  "mem_stats": {
-    "p50": 218230866.2,
-    "p90": 303088554.272727,
-    "p99": 314353959.670886
+    "prometheus": {
+      "pod_name": "prometheus",
+      "cpu": {
+        "p50": "192m",
+        "p90": "314m",
+        "p99": "348m",
+        "recommended_request": "418m",
+        "recommended_limit": "697m",
+        "used_segment": "match",
+        "match_samples": 108
+      },
+      "memory": {
+        "p50": "1Mi",
+        "p90": "1Mi",
+        "p99": "1Mi",
+        "recommended_request": "1Mi",
+        "recommended_limit": "1Mi",
+        "used_segment": "match",
+        "match_samples": 108
+      },
+      "note": "자동 반영 아님 — 운영자 검토 후 수동 적용하세요."
+    },
+    "argocd": {
+      "pod_name": "argocd",
+      "cpu": {
+        "p50": "192m",
+        "p90": "314m",
+        "p99": "348m",
+        "recommended_request": "418m",
+        "recommended_limit": "697m",
+        "used_segment": "match",
+        "match_samples": 108
+      },
+      "memory": {
+        "p50": "1Mi",
+        "p90": "1Mi",
+        "p99": "1Mi",
+        "recommended_request": "1Mi",
+        "recommended_limit": "1Mi",
+        "used_segment": "match",
+        "match_samples": 108
+      },
+      "note": "자동 반영 아님 — 운영자 검토 후 수동 적용하세요."
+    },
+    "karpenter": {
+      "pod_name": "karpenter",
+      "cpu": {
+        "p50": "192m",
+        "p90": "314m",
+        "p99": "348m",
+        "recommended_request": "418m",
+        "recommended_limit": "697m",
+        "used_segment": "match",
+        "match_samples": 108
+      },
+      "memory": {
+        "p50": "1Mi",
+        "p90": "1Mi",
+        "p99": "1Mi",
+        "recommended_request": "1Mi",
+        "recommended_limit": "1Mi",
+        "used_segment": "match",
+        "match_samples": 108
+      },
+      "note": "자동 반영 아님 — 운영자 검토 후 수동 적용하세요."
+    },
+    "np-predict": {
+      "pod_name": "np-predict",
+      "cpu": {
+        "p50": "192m",
+        "p90": "314m",
+        "p99": "348m",
+        "recommended_request": "418m",
+        "recommended_limit": "697m",
+        "used_segment": "match",
+        "match_samples": 108
+      },
+      "memory": {
+        "p50": "1Mi",
+        "p90": "1Mi",
+        "p99": "1Mi",
+        "recommended_request": "1Mi",
+        "recommended_limit": "1Mi",
+        "used_segment": "match",
+        "match_samples": 108
+      },
+      "note": "자동 반영 아님 — 운영자 검토 후 수동 적용하세요."
+    },
+    "np-train": {
+      "pod_name": "np-train",
+      "cpu": {
+        "p50": "192m",
+        "p90": "314m",
+        "p99": "348m",
+        "recommended_request": "418m",
+        "recommended_limit": "697m",
+        "used_segment": "match",
+        "match_samples": 108
+      },
+      "memory": {
+        "p50": "1Mi",
+        "p90": "1Mi",
+        "p99": "1Mi",
+        "recommended_request": "1Mi",
+        "recommended_limit": "1Mi",
+        "used_segment": "match",
+        "match_samples": 108
+      },
+      "note": "자동 반영 아님 — 운영자 검토 후 수동 적용하세요."
+    },
+    "spot-node": {
+      "target": "spot-worker 노드그룹",
+      "p50": "2958m",
+      "p90": "4499m",
+      "p95": "4782m",
+      "recommended_cores": 6.22,
+      "recommended_instance": "t3.2xlarge (8 vCPU)",
+      "used_segment": "match",
+      "note": "자동 반영 아님 — Karpenter NodePool instanceType을 수동 조정하세요."
+    }
   }
 }
