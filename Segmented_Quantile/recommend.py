@@ -11,7 +11,7 @@ Segmented Quantile(np.quantile) 방식으로 분위수를 산출한다.
   kube-system→ karpenter (System)
   ai         → np-predict, np-train (AI)
 
-CronJob 진입점: python -m Segmented_Quantile.recommend
+CronJob 진입점: python -m Segmented_Quantile.recommend 
 """
 
 import argparse
