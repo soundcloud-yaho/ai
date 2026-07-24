@@ -36,8 +36,9 @@ if str(ROOT_DIR) not in sys.path:
 POD_QUANTILES = {"p50": 0.50, "p90": 0.90, "p99": 0.99}
 NODE_QUANTILES = {"p50": 0.50, "p90": 0.90, "p95": 0.95}
 
-# 경기 시간대 — KST 18~02시
-MATCH_HOURS_KST = list(range(18, 24)) + list(range(0, 3))
+# 경기 시간대 — KST 18~02시/ 프로젝트 테스트를 위한 시간 12~19시까지
+#MATCH_HOURS_KST = list(range(18, 24)) + list(range(0, 3))
+MATCH_HOURS_KST = list(range(12, 19))
 
 BYTES_PER_MIB = 1024 * 1024
 RESAMPLE_STEP = "5min"
@@ -51,8 +52,8 @@ ANALYSIS_TARGETS = [
     ("prometheus",       "monitoring",  ["prometheus", "prometheus-server"]),
     ("argocd",          "argocd",      ["argocd-server", "server"]),
     ("karpenter",        "kube-system", ["controller", "karpenter"]),
-    ("np-predict",       "ai",          ["neuralprophet-predict", "predict", "np-predict"]),
-    ("np-train",         "ai",          ["neuralprophet-train", "train", "np-train"]),
+    ("np-predict",       "ai",          ["predict"]),
+    ("np-train",         "ai",          ["neuralprophet-train"]),
 ]
 
 
@@ -186,9 +187,15 @@ def analyze_quantiles(df, quantiles=None, match_hours=None):
     all_vals    = df["value"].dropna().values
 
     result = {}
+    
     for label, q in quantiles.items():
+        # 경기 시간대 분위수
         src = match_vals if len(match_vals) >= 10 else all_vals
         result[label] = float(round(np.quantile(src, q), 6))
+
+        # 평시 분위수 — 별도 키로 저장
+        src_normal = normal_vals if len(normal_vals) >= 10 else all_vals
+        result["{0}_normal".format(label)] = float(round(np.quantile(src_normal, q), 6))
 
     result["match_sample_count"]  = int(len(match_vals))
     result["normal_sample_count"] = int(len(normal_vals))
@@ -202,12 +209,18 @@ def analyze_quantiles(df, quantiles=None, match_hours=None):
 def _cpu_rec(stats, buf, lim):
     # type: (Dict[str, Any], float, float) -> Dict[str, str]
     p99 = stats["p99"]
+    p99_normal = stats.get("p99_normal", p99)  # 평시 P99
     return {
+        # 경기 시간대 권고
         "p50": _cores_to_millicores(stats["p50"]),
         "p90": _cores_to_millicores(stats["p90"]),
         "p99": _cores_to_millicores(p99),
         "recommended_request": _cores_to_millicores(p99 * buf),
         "recommended_limit":   _cores_to_millicores(p99 * lim),
+        # 평시 권고 (KEDA minReplica 기준)
+        "p99_normal":                  _cores_to_millicores(p99_normal),
+        "recommended_request_normal":  _cores_to_millicores(p99_normal * buf),
+        "recommended_limit_normal":    _cores_to_millicores(p99_normal * lim),
         "used_segment":  stats.get("used_segment", "all"),
         "match_samples": stats.get("match_sample_count", 0),
     }
