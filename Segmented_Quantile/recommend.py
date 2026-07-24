@@ -1,4 +1,4 @@
-"""Quantile Regression 기반 Pod 리소스 사이징 권고.
+"""Segmented_Quantile 기반 Pod 리소스 사이징 권고.
 
 Prometheus에서 수집한 CPU·메모리 시계열을 경기 시간대/평시로 분리해
 Segmented Quantile(np.quantile) 방식으로 분위수를 산출한다.
@@ -11,7 +11,7 @@ Segmented Quantile(np.quantile) 방식으로 분위수를 산출한다.
   kube-system→ karpenter (System)
   ai         → np-predict, np-train (AI)
 
-CronJob 진입점: python -m quantile_regression.recommend
+CronJob 진입점: python -m Segmented_Quantile.recommend 
 """
 
 import argparse
@@ -337,7 +337,7 @@ def _analyze_pod(label, namespace, container, source, data_path,
 # ── 메인 파이프라인 ────────────────────────────────────────────────────────────
 
 def main():
-    """QR 권고 파이프라인 진입점. CronJob: python -m quantile_regression.recommend"""
+    """QR 권고 파이프라인 진입점. CronJob: python -m Segmented_Quantile.recommend"""
 
     prometheus_url    = os.environ.get(
         "PROMETHEUS_URL",
@@ -361,7 +361,7 @@ def main():
         'sum(rate(node_cpu_seconds_total{mode!="idle"}[5m])) by (node)',
     )
 
-    parser = argparse.ArgumentParser(description="Quantile Regression Pod Sizing Report")
+    parser = argparse.ArgumentParser(description="Segmented Quantile Pod Sizing Report")
     parser.add_argument("--source", choices=["prometheus", "file"], default="prometheus")
     parser.add_argument("--data",      type=Path,
         default=Path(__file__).parent / "test_cpu.json")
@@ -424,7 +424,7 @@ def main():
 
     # ── Slack 전송 (실패해도 Job 성공 처리) ───────────────────────────────────
     print("[Slack] 리포트 전송 중...")
-    from quantile_regression.report import send_slack_report
+    from Segmented_Quantile.report import send_slack_report
     try:
         send_result = send_slack_report(
             slack_webhook_url=slack_webhook_url,

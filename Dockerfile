@@ -26,7 +26,7 @@ RUN addgroup --system appgroup \
 
 COPY --chown=appuser:appgroup common/ ./common/
 COPY --chown=appuser:appgroup neuralprophet/ ./neuralprophet/
-COPY --chown=appuser:appgroup quantile_regression/ ./quantile_regression/
+COPY --chown=appuser:appgroup Segmented_Quantile/ ./Segmented_Quantile/
 COPY --chown=appuser:appgroup isolation_forest/ ./isolation_forest/
 COPY --chown=appuser:appgroup report/ ./report/
 COPY --chown=appuser:appgroup loadtest/ ./loadtest/
