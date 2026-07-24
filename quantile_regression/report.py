@@ -41,16 +41,25 @@ def _pod_section(label, rec):
 
     return (
         "*[{label}]* `{seg}구간 / {smp}샘플`\n"
-        "  CPU  P99: `{cp99}` → Request: `{creq}`  Limit: `{clim}`\n"
-        "  MEM  P99: `{mp99}` → Request: `{mreq}`  Limit: `{mlim}`\n"
+        "  *경기 시간대* CPU P99: `{cp99}` → Request: `{creq}`  Limit: `{clim}`\n"
+        "  *평시*        CPU P99: `{cp99n}` → Request: `{creqn}`  Limit: `{climn}`\n"
+        "  *경기 시간대* MEM P99: `{mp99}` → Request: `{mreq}`  Limit: `{mlim}`\n"
+        "  *평시*        MEM P99: `{mp99n}` → Request: `{mreqn}`  Limit: `{mlimn}`\n"
+        "  *KEDA* 평시 minReplica 기준: CPU `{creqn}` 이하 설정 권장\n"
     ).format(
         label=label, seg=seg, smp=smp,
         cp99=cpu.get("p99", "-"),
         creq=cpu.get("recommended_request", "-"),
         clim=cpu.get("recommended_limit", "-"),
+        cp99n=cpu.get("p99_normal", "-"),
+        creqn=cpu.get("recommended_request_normal", "-"),
+        climn=cpu.get("recommended_limit_normal", "-"),
         mp99=mem.get("p99", "-"),
         mreq=mem.get("recommended_request", "-"),
         mlim=mem.get("recommended_limit", "-"),
+        mp99n=mem.get("p99_normal", "-"),
+        mreqn=mem.get("recommended_request_normal", "-"),
+        mlimn=mem.get("recommended_limit_normal", "-"),
     )
 
 

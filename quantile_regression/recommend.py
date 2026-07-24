@@ -187,9 +187,15 @@ def analyze_quantiles(df, quantiles=None, match_hours=None):
     all_vals    = df["value"].dropna().values
 
     result = {}
+    
     for label, q in quantiles.items():
+        # 경기 시간대 분위수
         src = match_vals if len(match_vals) >= 10 else all_vals
         result[label] = float(round(np.quantile(src, q), 6))
+
+        # 평시 분위수 — 별도 키로 저장
+        src_normal = normal_vals if len(normal_vals) >= 10 else all_vals
+        result["{0}_normal".format(label)] = float(round(np.quantile(src_normal, q), 6))
 
     result["match_sample_count"]  = int(len(match_vals))
     result["normal_sample_count"] = int(len(normal_vals))
@@ -203,12 +209,18 @@ def analyze_quantiles(df, quantiles=None, match_hours=None):
 def _cpu_rec(stats, buf, lim):
     # type: (Dict[str, Any], float, float) -> Dict[str, str]
     p99 = stats["p99"]
+    p99_normal = stats.get("p99_normal", p99)  # 평시 P99
     return {
+        # 경기 시간대 권고
         "p50": _cores_to_millicores(stats["p50"]),
         "p90": _cores_to_millicores(stats["p90"]),
         "p99": _cores_to_millicores(p99),
         "recommended_request": _cores_to_millicores(p99 * buf),
         "recommended_limit":   _cores_to_millicores(p99 * lim),
+        # 평시 권고 (KEDA minReplica 기준)
+        "p99_normal":                  _cores_to_millicores(p99_normal),
+        "recommended_request_normal":  _cores_to_millicores(p99_normal * buf),
+        "recommended_limit_normal":    _cores_to_millicores(p99_normal * lim),
         "used_segment":  stats.get("used_segment", "all"),
         "match_samples": stats.get("match_sample_count", 0),
     }
