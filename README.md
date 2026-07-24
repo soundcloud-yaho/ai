@@ -36,9 +36,8 @@ Karpenter → Spot Worker 노드 프로비저닝
 |---|---|---|
 | `neuralprophet/train.py` | Prometheus 시계열 조회 → NeuralProphet 재학습 → 모델 저장 | - |
 | `neuralprophet/predict.py` | 저장된 모델 로드 → 다음 구간 트래픽 예측 → Pushgateway push | 5분 |
-| `quantile_regression/recommend.py` | P99 자원 분포 분석 → 파드 사이즈 권고 리포트 생성 (Grafana/Slack 발송, **자동 반영 아님**) | - |
+| `Segmented Quantile(구간 분리 분위수)/recommend.py` | P99 자원 분포 분석 → 파드 사이즈 권고 리포트 생성 (Grafana/Slack 발송, **자동 반영 아님**) | - |
 | `isolation_forest/detect.py` | (확장) 봇/매크로 이상 트래픽 탐지 → 학습 데이터 정제 룰 | 여유시 |
-| `report/bedrock_report.py` | Kubecost API 지표 수집 → Bedrock 호출 → Slack 비용 분석 리포트 발송 | - |
 | `common/prometheus_client.py` | Prometheus 조회 공용 클라이언트 — 쿼리/기간 파라미터화 | - |
 | `common/pushgateway.py` | Pushgateway push 유틸 — **메트릭 이름/라벨 규약의 단일 소스.** 이 파일을 바꾸면 `worldcup-infra`의 KEDA ScaledObject 트리거 쿼리도 함께 수정해야 한다 | - |
 | `loadtest/locustfile.py` | 경기 시작 시점 트래픽 급증 패턴 시나리오 — **AI ON/OFF 비교 실험의 기준 코드.** 임의 수정 시 두 실험 간 비교가 무효화된다 | 수동 실행 |
