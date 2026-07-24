@@ -62,5 +62,5 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ${{ env.ECR_PREFIX }}/ai:${{ steps.image.outputs.tag }}
-          cache-from: type=gha,scope=soundcloud-ai
-          cache-to: type=gha,mode=max,scope=soundcloud-ai
+          cache-from: type=gha,scope=soundcloud-ai-v2
+          cache-to: type=gha,mode=max,scope=soundcloud-ai-v2
