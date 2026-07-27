@@ -27,6 +27,8 @@ from config import (  # 경로·Prometheus·학습 설정
     DATA_PATH,
     METRICS_PATH,
     MODEL_PATH,
+    N_FORECASTS,
+    N_LAGS,
     OUTPUT_DIR,
     PROMETHEUS_QUERY,
     PROMETHEUS_URL,
@@ -167,7 +169,12 @@ def main() -> None:
         help="학습 종료 기준 시각 ISO8601. 미지정 시 해당 타임존 오늘 00:00(=어제까지 포함)",
     )
     parser.add_argument("--epochs", type=int, default=None, help="README epochs 덮어쓰기")
-    parser.add_argument("--val-days", type=int, default=2)  # holdout 검증 일수
+    parser.add_argument(
+        "--val-days",
+        type=float,
+        default=2,  # holdout 검증 일수 (소수 허용, 0=검증 생략 — 짧은 lookback 테스트용)
+        help="holdout 검증 일수. 소수 허용, 0이면 전체를 학습에 쓰고 검증을 건너뛴다",
+    )
     args = parser.parse_args()  # CLI 인자 파싱 완료
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)  # output 디렉터리 생성
@@ -203,8 +210,14 @@ def main() -> None:
     print(f"      dated copy : {dated_model_path}")
 
     print("[3/5] Validating on holdout...")
-    val_forecast = model.predict(val_df)  # 검증 구간 1-step 예측
-    val_metrics = compute_metrics(val_forecast["y"], val_forecast["yhat1"])  # MAE/RMSE/MAPE
+    min_val_points = N_LAGS + N_FORECASTS  # NeuralProphet.predict()가 요구하는 최소 행 수 (36+12)
+    if len(val_df) >= min_val_points:
+        val_forecast = model.predict(val_df)  # 검증 구간 1-step 예측
+        val_metrics = compute_metrics(val_forecast["y"], val_forecast["yhat1"])  # MAE/RMSE/MAPE
+    else:  # 짧은 lookback 테스트(--val-days 0 등): 검증만 건너뛰고 모델 산출물은 유지
+        print(f"      skip: val_points={len(val_df)} < {min_val_points} (검증 생략)")
+        val_forecast = None
+        val_metrics = None
 
     result = {  # train_metrics.json에 저장할 결과
         "data_source": args.source,
@@ -223,7 +236,8 @@ def main() -> None:
 
     print("[4/5] Saving plots...")
     plot_training_overview(df, train_df, val_df, OUTPUT_DIR / "01_dataset_split.png")
-    plot_validation(val_df, val_forecast, OUTPUT_DIR / "02_validation_forecast.png")
+    if val_forecast is not None:  # 검증을 건너뛴 경우 검증 그래프도 생략
+        plot_validation(val_df, val_forecast, OUTPUT_DIR / "02_validation_forecast.png")
 
     print("[5/5] Done")
     print(json.dumps(result, indent=2, ensure_ascii=False, default=str))
