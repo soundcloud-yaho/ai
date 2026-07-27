@@ -132,7 +132,7 @@ def derive_scale_signals(predicted_rps_peak: float, current_rps: float) -> dict[
         "predicted_rps_with_headroom": round(target_rps, 2),  # 여유 반영 목표 RPS
         "forecast_horizon_minutes": FORECAST_MINUTES,  # 예측 구간(60분)
         "keda": {  # Pod 스케일 아웃 신호
-            "metric_name": "worldcup_predicted_rps_peak",
+            "metric_name": "worldcup_recommended_pods",
             "recommended_pods": recommended_pods,
             "current_pods": current_pods,
             "scale_out_trigger": recommended_pods > current_pods,  # 권장 > 현재면 scale out
