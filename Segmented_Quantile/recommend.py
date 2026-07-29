@@ -5,12 +5,11 @@ Segmented Quantile(np.quantile) 방식으로 분위수를 산출한다.
 
 컨테이너 이름을 Prometheus에서 자동 탐지 — 환경변수 입력 불필요.
 분석 대상 네임스페이스:
-  app        → backend, sync-matches (Worker)
+  app        → backend
   monitoring → prometheus (System)
   argocd     → argocd-server (System)
   kube-system→ karpenter (System)
-  ai         → np-predict, np-train (AI)
-
+  spot-node
 CronJob 진입점: python -m Segmented_Quantile.recommend 
 """
 
@@ -38,7 +37,7 @@ NODE_QUANTILES = {"p50": 0.50, "p90": 0.90, "p95": 0.95}
 
 # 경기 시간대 — KST 18~02시/ 프로젝트 테스트를 위한 시간 12~19시까지
 #MATCH_HOURS_KST = list(range(18, 24)) + list(range(0, 3))
-MATCH_HOURS_KST = list(range(12, 19))
+MATCH_HOURS_KST = list(range(12, 24))
 
 BYTES_PER_MIB = 1024 * 1024
 RESAMPLE_STEP = "5min"
@@ -48,12 +47,9 @@ RESAMPLE_STEP = "5min"
 ANALYSIS_TARGETS = [
     # label              namespace      후보 컨테이너 이름
     ("backend",          "app",         ["backend"]),
-    ("sync-matches",     "app",         ["sync", "sync-matches"]),
     ("prometheus",       "monitoring",  ["prometheus", "prometheus-server"]),
     ("argocd",          "argocd",      ["argocd-server", "server"]),
-    ("karpenter",        "kube-system", ["controller", "karpenter"]),
-    ("np-predict",       "ai",          ["predict"]),
-    ("np-train",         "ai",          ["neuralprophet-train"]),
+    ("karpenter",        "kube-system", ["controller", "karpenter"])
 ]
 
 
@@ -96,6 +92,52 @@ def discover_container(prometheus_url, namespace, candidates, timeout=10):
         except Exception:
             continue  # 조회 실패 시 다음 후보 시도
     return ""  # 모든 후보 없음
+
+def discover_worker_node_ips(prometheus_url, nodegroup="soundcloud-prod-eks-worker"):
+    # type: (str, str) -> List[str]
+    """Prometheus에서 Worker nodegroup IP 목록을 동적으로 조회한다.
+    
+    nodegroup 이름 기반으로 조회하므로
+    Spot 노드가 교체되어 IP가 바뀌어도 자동으로 반영된다.
+    """
+    from urllib.parse import urlencode
+
+    result_ips = []
+    try:
+        # Step 1: nodegroup으로 노드 이름 조회
+        url = "{0}/api/v1/query?{1}".format(
+            prometheus_url,
+            urlencode({"query": 
+                'kube_node_labels{{label_eks_amazonaws_com_nodegroup="{0}"}}'.format(nodegroup)
+            })
+        )
+        with urlopen(url, timeout=10) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        nodes = list(set(
+            r["metric"].get("node", "")
+            for r in data.get("data", {}).get("result", [])
+            if r["metric"].get("node")
+        ))
+
+        # Step 2: 노드 이름으로 internal_ip 조회
+        for node in nodes:
+            url2 = "{0}/api/v1/query?{1}".format(
+                prometheus_url,
+                urlencode({"query":
+                    'kube_node_info{{node="{0}"}}'.format(node)
+                })
+            )
+            with urlopen(url2, timeout=10) as resp:
+                data2 = json.loads(resp.read().decode("utf-8"))
+            for r in data2.get("data", {}).get("result", []):
+                ip = r["metric"].get("internal_ip", "")
+                if ip and ip not in result_ips:
+                    result_ips.append(ip)
+
+    except Exception as e:
+        print("      [WARNING] Worker 노드 IP 조회 실패: {0}".format(e))
+
+    return result_ips
 
 
 def discover_all_containers(prometheus_url, targets, source):
@@ -358,7 +400,16 @@ def main():
 
     node_cpu_query = os.environ.get(
         "QR_NODE_CPU_QUERY",
-        'sum(rate(node_cpu_seconds_total{mode!="idle"}[5m])) by (node)',
+        # kube_node_labels로 Worker 노드 IP 동적 조회 후 필터링
+        'sum by (instance) ('
+        '  rate(node_cpu_seconds_total{mode!="idle"}[5m])'
+        '  * on(instance) group_left() '
+        '  label_replace('
+        '    kube_node_labels{label_role="worker"},'
+        '    "instance", "$1:9100", '
+        '    "label_kubernetes_io_hostname", "(.*)"'
+        '  )'
+        ')',    
     )
 
     parser = argparse.ArgumentParser(description="Segmented Quantile Pod Sizing Report")
@@ -400,20 +451,25 @@ def main():
             results[label] = rec
 
     # ── 4. Spot Worker 노드 CPU 분석 ──────────────────────────────────────────
+    # [4/4] Spot Worker 노드 CPU 분석 전에 추가
     print("[4/4] Spot Worker 노드 CPU 분석 중...")
-    try:
-        node_payload   = load_training_data(
-            args.source, args.node_data, node_cpu_query,
-            prometheus_url, lookback_days)
-        node_df        = preprocess(load_prometheus_payload(node_payload))
-        node_cpu_stats = analyze_quantiles(node_df, NODE_QUANTILES)
-        node_rec       = generate_node_recommendation(node_cpu_stats, node_buf)
-        results["spot-node"] = node_rec
-        print("      [spot-node] P95={0}  권고: {1}".format(
-            node_rec["p95"], node_rec["recommended_instance"]))
-    except Exception as e:
-        print("      [spot-node] 분석 실패: {0}".format(e))
-        results["spot-node"] = {"skipped": str(e)}
+
+    # Worker 노드 IP 동적 조회
+    worker_ips = discover_worker_node_ips(prometheus_url)
+    if worker_ips:
+        ip_regex = "|".join("{0}:9100".format(ip) for ip in worker_ips)
+        node_cpu_query = (
+            'sum(rate(node_cpu_seconds_total{{mode!="idle",'
+            'instance=~"{0}"}}[5m]))'.format(ip_regex)
+        )
+        print("      Worker 노드 IP: {0}".format(worker_ips))
+    else:
+        # 폴백 — 전체 노드
+        node_cpu_query = os.environ.get(
+            "QR_NODE_CPU_QUERY",
+            'sum(rate(node_cpu_seconds_total{mode!="idle"}[5m]))',
+        )
+        print("      [WARNING] Worker IP 조회 실패 → 전체 노드 폴백")
 
     # ── 결과 JSON 저장 ─────────────────────────────────────────────────────────
     output = {"lookback_days": lookback_days, "recommendations": results}
