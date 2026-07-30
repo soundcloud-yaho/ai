@@ -74,12 +74,25 @@ jobs:
         run: |
           set -euo pipefail
 
+          PAYLOAD=$(jq -n \
+            --arg event_type "update-ai-image" \
+            --arg application "ai" \
+            --arg image_tag "${IMAGE_TAG}" \
+            '{
+              event_type: $event_type,
+              client_payload: {
+                application: $application,
+                image_tag: $image_tag
+              }
+            }')
+
           curl --fail-with-body \
             --request POST \
             --url "https://api.github.com/repos/soundcloud-yaho/infra/dispatches" \
             --header "Accept: application/vnd.github+json" \
             --header "Authorization: Bearer ${GH_TOKEN}" \
             --header "X-GitHub-Api-Version: 2022-11-28" \
-            --data "{\"event_type\":\"update-ai-image\",\"client_payload\":{\"application\":\"ai\",\"image_tag\":\"${IMAGE_TAG}\"}}"
+            --header "Content-Type: application/json" \
+            --data "${PAYLOAD}"
 
           echo "Infra AI 이미지 업데이트 요청 완료: ${IMAGE_TAG}"
