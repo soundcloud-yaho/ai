@@ -271,12 +271,17 @@ def _cpu_rec(stats, buf, lim):
 def _mem_rec(stats, buf, lim):
     # type: (Dict[str, Any], float, float) -> Dict[str, str]
     p99 = stats["p99"]
+    p99_normal = stats.get("p99_normal", p99)
     return {
         "p50": _bytes_to_mib(stats["p50"]),
         "p90": _bytes_to_mib(stats["p90"]),
         "p99": _bytes_to_mib(p99),
         "recommended_request": _bytes_to_mib(p99 * buf),
         "recommended_limit":   _bytes_to_mib(p99 * lim),
+        # 평시 권고 (KEDA minReplica 기준으로 쓰기 위함)
+        "p99_normal":                  _bytes_to_mib(p99_normal),
+        "recommended_request_normal":  _bytes_to_mib(p99_normal * buf),
+        "recommended_limit_normal":    _bytes_to_mib(p99_normal * lim),
         "used_segment":  stats.get("used_segment", "all"),
         "match_samples": stats.get("match_sample_count", 0),
     }
@@ -428,11 +433,11 @@ def main():
     print("[0/4] 컨테이너 이름 자동 탐지 중...")
     container_map = discover_all_containers(prometheus_url, ANALYSIS_TARGETS, args.source)
 
-    # ── 1~3. 노드그룹별 Pod 분석 ───────────────────────────────────────────────
+    # ── 1~2. 노드그룹별 Pod 분석 ───────────────────────────────────────────────
     groups = [
-        ("[1/4] Worker 파드", ["backend", "sync-matches"]),
-        ("[2/4] System 파드", ["prometheus", "argocd", "karpenter"]),
-        ("[3/4] AI 파드",     ["np-predict", "np-train"]),
+        ("[1/3] Worker 파드", ["backend"]),
+        ("[2/3] System 파드", ["prometheus", "argocd", "karpenter"]),
+        
     ]
 
     target_map = {label: (ns, cands)
@@ -450,9 +455,8 @@ def main():
             )
             results[label] = rec
 
-    # ── 4. Spot Worker 노드 CPU 분석 ──────────────────────────────────────────
-    # [4/4] Spot Worker 노드 CPU 분석 전에 추가
-    print("[4/4] Spot Worker 노드 CPU 분석 중...")
+    # ── 3. Spot Worker 노드 CPU 분석 ──────────────────────────────────────────
+    print("[3/3] Spot Worker 노드 CPU 분석 중...")
 
     # Worker 노드 IP 동적 조회
     worker_ips = discover_worker_node_ips(prometheus_url)
@@ -470,6 +474,20 @@ def main():
             'sum(rate(node_cpu_seconds_total{mode!="idle"}[5m]))',
         )
         print("      [WARNING] Worker IP 조회 실패 → 전체 노드 폴백")
+    # Prometheus에 실제로 던져서 데이터를 받아오는 코드
+    # results 딕셔너리에 "spot-node" 키가 생성되도록=> report.py의 Slack 메시지 "Spot Worker 노드" 섹션
+    try:
+        node_df = preprocess(load_prometheus_payload(
+            load_training_data(args.source, args.node_data, node_cpu_query,
+                                prometheus_url, lookback_days)))
+        node_stats = analyze_quantiles(node_df, quantiles=NODE_QUANTILES)
+        results["spot-node"] = generate_node_recommendation(node_stats, node_buf=node_buf)
+        print("        [spot-node] CPU P95={0:.4f} [{1}구간] → 권고: {2}".format(
+            node_stats["p95"], node_stats["used_segment"],
+            results["spot-node"]["recommended_instance"]))
+    except Exception as e:
+        print("        [spot-node] 분석 실패: {0}".format(e))
+        results["spot-node"] = {"skipped": str(e)}
 
     # ── 결과 JSON 저장 ─────────────────────────────────────────────────────────
     output = {"lookback_days": lookback_days, "recommendations": results}
