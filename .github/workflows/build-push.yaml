@@ -1,6 +1,7 @@
-# [CI] master 푸시 시 AI Docker 이미지 빌드 -> ECR 푸시
+# [CI/CD] master 푸시 시 AI Docker 이미지 빌드 → ECR Push
+# ECR Push 완료 후 Infra 레포에 이미지 태그 변경 요청
 # 이미지 태그는 Git Commit SHA 앞 7자리를 사용
-# Buildx 캐시를 활용하여 무거운 Python 의존성 레이어 재사용
+# Buildx 캐시를 활용하여 Python 의존성 레이어 재사용
 
 name: Build and Push AI Image to ECR
 
@@ -67,37 +68,9 @@ jobs:
 
       # ECR Push 완료 후 Infra 레포에 이미지 태그 변경 요청
       - name: Request AI Image Update
-        env:
-          GH_TOKEN: ${{ secrets.INFRA_CICD_TOKEN }}
-          IMAGE_TAG: ${{ steps.image.outputs.tag }}
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          jq -n \
-            --arg event_type "update-ai-image" \
-            --arg application "ai" \
-            --arg image_tag "${IMAGE_TAG}" \
-            '{
-              event_type: $event_type,
-              client_payload: {
-                application: $application,
-                image_tag: $image_tag
-              }
-            }' > dispatch-payload.json
-
-          echo "전송할 JSON:"
-          cat dispatch-payload.json
-
-          jq empty dispatch-payload.json
-
-          curl --fail-with-body \
-            --request POST \
-            --url "https://api.github.com/repos/soundcloud-yaho/infra/dispatches" \
-            --header "Accept: application/vnd.github+json" \
-            --header "Authorization: Bearer ${GH_TOKEN}" \
-            --header "X-GitHub-Api-Version: 2022-11-28" \
-            --header "Content-Type: application/json" \
-            --data-binary "@dispatch-payload.json"
-
-          echo "Infra AI 이미지 업데이트 요청 완료: ${IMAGE_TAG}"
+        uses: peter-evans/repository-dispatch@v4
+        with:
+          token: ${{ secrets.INFRA_CICD_TOKEN }}
+          repository: soundcloud-yaho/infra
+          event-type: update-ai-image
+          client-payload: '{"application":"ai","image_tag":"${{ steps.image.outputs.tag }}"}'
