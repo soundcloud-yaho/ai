@@ -35,7 +35,7 @@ if str(ROOT_DIR) not in sys.path:
 POD_QUANTILES = {"p50": 0.50, "p90": 0.90, "p99": 0.99}
 NODE_QUANTILES = {"p50": 0.50, "p90": 0.90, "p95": 0.95}
 
-# 경기 시간대 — KST 18~02시/ 프로젝트 테스트를 위한 시간 12~19시까지
+# 경기 시간대 — KST 18~02시/ 프로젝트 테스트를 위한 시간 12~24시까지
 #MATCH_HOURS_KST = list(range(18, 24)) + list(range(0, 3))
 MATCH_HOURS_KST = list(range(12, 24))
 
@@ -477,9 +477,24 @@ def main():
     # Prometheus에 실제로 던져서 데이터를 받아오는 코드
     # results 딕셔너리에 "spot-node" 키가 생성되도록=> report.py의 Slack 메시지 "Spot Worker 노드" 섹션
     try:
-        node_df = preprocess(load_prometheus_payload(
-            load_training_data(args.source, args.node_data, node_cpu_query,
-                                prometheus_url, lookback_days)))
+        if args.source == "file":
+            node_payload = load_training_data(
+                args.source, args.node_data, node_cpu_query,
+                prometheus_url, lookback_days)
+        else:
+            from datetime import datetime, timedelta
+            from zoneinfo import ZoneInfo
+            from common.prometheus_client import fetch_training_payload
+
+            tz = ZoneInfo("Asia/Seoul")
+            end = datetime.now(tz)
+            start = end - timedelta(days=lookback_days)
+            node_payload = fetch_training_payload(
+                prometheus_url=prometheus_url,
+                query=node_cpu_query,
+                start=start, end=end, step="5m",
+            )
+        node_df = preprocess(load_prometheus_payload(node_payload))
         node_stats = analyze_quantiles(node_df, quantiles=NODE_QUANTILES)
         results["spot-node"] = generate_node_recommendation(node_stats, node_buf=node_buf)
         print("        [spot-node] CPU P95={0:.4f} [{1}구간] → 권고: {2}".format(
