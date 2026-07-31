@@ -70,12 +70,11 @@ def build_slack_message(recommendations, lookback_days=7):
     recommendations 구조 (recommend.py의 results dict):
       {
         "backend":       {"cpu": {...}, "memory": {...}},
-        "sync-matches":  {"cpu": {...}, "memory": {...}},
+  
         "prometheus":    {"cpu": {...}, "memory": {...}},
         "argocd":        {"cpu": {...}, "memory": {...}},
         "karpenter":     {"cpu": {...}, "memory": {...}},
-        "np-predict":    {"cpu": {...}, "memory": {...}},
-        "np-train":      {"cpu": {...}, "memory": {...}},
+    
         "spot-node":     {"p95": "...", "recommended_instance": "..."},
       }
     """
@@ -85,7 +84,7 @@ def build_slack_message(recommendations, lookback_days=7):
 
     # ── Worker 노드 파드 ──────────────────────────────────────────────────────
     text += "*── Worker 노드 ──*\n"
-    for label in ("backend", "sync-matches"):
+    for label in ("backend",):
         if label in recommendations:
             text += _pod_section(label, recommendations[label])
 
@@ -95,11 +94,6 @@ def build_slack_message(recommendations, lookback_days=7):
         if label in recommendations:
             text += _pod_section(label, recommendations[label])
 
-    # ── AI 노드 파드 ──────────────────────────────────────────────────────────
-    text += "\n*── AI 노드 ──*\n"
-    for label in ("np-predict", "np-train"):
-        if label in recommendations:
-            text += _pod_section(label, recommendations[label])
 
     # ── Spot Worker 노드 ──────────────────────────────────────────────────────
     node = recommendations.get("spot-node", {})
