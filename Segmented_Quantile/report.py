@@ -100,9 +100,10 @@ def build_slack_message(recommendations, lookback_days=7):
     if node and not node.get("skipped"):
         text += (
             "\n*── Spot Worker 노드 ──*\n"
-            "  CPU P95: `{p95}` → 권고 인스턴스: `{inst}` ({cores} vCPU)\n"
+            "  CPU P95: `{p95}` ({samples}개 샘플) → 권고 인스턴스: `{inst}` ({cores} vCPU)\n"
         ).format(
             p95=node.get("p95", "-"),
+            samples=node.get("match_samples", 0),
             inst=node.get("recommended_instance", "-"),
             cores=node.get("recommended_cores", "-"),
         )
