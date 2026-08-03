@@ -6,7 +6,7 @@ import sys
 
 import boto3
 import requests
-
+ 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("spot_price_exporter")
 
