@@ -35,7 +35,7 @@ if str(ROOT_DIR) not in sys.path:
 POD_QUANTILES = {"p50": 0.50, "p90": 0.90, "p99": 0.99}
 NODE_QUANTILES = {"p50": 0.50, "p90": 0.90, "p95": 0.95}
 
-# 경기 시간대 — KST 18~02시/ 프로젝트 테스트를 위한 시간 12~19시까지
+# 경기 시간대 — KST 18~02시/ 프로젝트 테스트를 위한 시간 12~24시까지
 #MATCH_HOURS_KST = list(range(18, 24)) + list(range(0, 3))
 MATCH_HOURS_KST = list(range(12, 24))
 
@@ -93,22 +93,22 @@ def discover_container(prometheus_url, namespace, candidates, timeout=10):
             continue  # 조회 실패 시 다음 후보 시도
     return ""  # 모든 후보 없음
 
-def discover_worker_node_ips(prometheus_url, nodegroup="soundcloud-prod-eks-worker"):
+def discover_worker_node_ips(prometheus_url, nodepool="spot-worker"):
     # type: (str, str) -> List[str]
-    """Prometheus에서 Worker nodegroup IP 목록을 동적으로 조회한다.
-    
-    nodegroup 이름 기반으로 조회하므로
-    Spot 노드가 교체되어 IP가 바뀌어도 자동으로 반영된다.
+    """Prometheus에서 Karpenter Spot 노드 IP 목록을 동적으로 조회한다.
+
+    karpenter.sh/nodepool 라벨 기반으로 조회하므로
+    Spot 노드가 껐다 켜져서 IP가 바뀌어도 자동으로 반영된다.
     """
     from urllib.parse import urlencode
 
     result_ips = []
     try:
-        # Step 1: nodegroup으로 노드 이름 조회
+        # Step 1: nodepool로 노드 이름 조회 (Karpenter 관리 노드)
         url = "{0}/api/v1/query?{1}".format(
             prometheus_url,
-            urlencode({"query": 
-                'kube_node_labels{{label_eks_amazonaws_com_nodegroup="{0}"}}'.format(nodegroup)
+            urlencode({"query":
+                'kube_node_labels{{label_karpenter_sh_nodepool="{0}"}}'.format(nodepool)
             })
         )
         with urlopen(url, timeout=10) as resp:
@@ -135,7 +135,7 @@ def discover_worker_node_ips(prometheus_url, nodegroup="soundcloud-prod-eks-work
                     result_ips.append(ip)
 
     except Exception as e:
-        print("      [WARNING] Worker 노드 IP 조회 실패: {0}".format(e))
+        print("      [WARNING] Spot 노드 IP 조회 실패: {0}".format(e))
 
     return result_ips
 
@@ -317,6 +317,7 @@ def generate_node_recommendation(node_cpu_stats, node_buf=1.3):
         "p50":                  _cores_to_millicores(node_cpu_stats.get("p50", 0)),
         "p90":                  _cores_to_millicores(node_cpu_stats.get("p90", 0)),
         "p95":                  _cores_to_millicores(p95_cores),
+        "match_samples": node_cpu_stats.get("match_sample_count", 0),  # ← 몇번 켜졌는지 샘플을 운영자가 참고하도록 추가
         "recommended_cores":    round(rec_cores, 2),
         "recommended_instance": instance,
         "used_segment":         node_cpu_stats.get("used_segment", "all"),
@@ -466,7 +467,7 @@ def main():
             'sum(rate(node_cpu_seconds_total{{mode!="idle",'
             'instance=~"{0}"}}[5m]))'.format(ip_regex)
         )
-        print("      Worker 노드 IP: {0}".format(worker_ips))
+        print("      Spot 노드 IP: {0}".format(worker_ips))
     else:
         # 폴백 — 전체 노드
         node_cpu_query = os.environ.get(
@@ -477,9 +478,24 @@ def main():
     # Prometheus에 실제로 던져서 데이터를 받아오는 코드
     # results 딕셔너리에 "spot-node" 키가 생성되도록=> report.py의 Slack 메시지 "Spot Worker 노드" 섹션
     try:
-        node_df = preprocess(load_prometheus_payload(
-            load_training_data(args.source, args.node_data, node_cpu_query,
-                                prometheus_url, lookback_days)))
+        if args.source == "file":
+            node_payload = load_training_data(
+                args.source, args.node_data, node_cpu_query,
+                prometheus_url, lookback_days)
+        else:
+            from datetime import datetime, timedelta
+            from zoneinfo import ZoneInfo
+            from common.prometheus_client import fetch_training_payload
+
+            tz = ZoneInfo("Asia/Seoul")
+            end = datetime.now(tz)
+            start = end - timedelta(days=lookback_days)
+            node_payload = fetch_training_payload(
+                prometheus_url=prometheus_url,
+                query=node_cpu_query,
+                start=start, end=end, step="5m",
+            )
+        node_df = preprocess(load_prometheus_payload(node_payload))
         node_stats = analyze_quantiles(node_df, quantiles=NODE_QUANTILES)
         results["spot-node"] = generate_node_recommendation(node_stats, node_buf=node_buf)
         print("        [spot-node] CPU P95={0:.4f} [{1}구간] → 권고: {2}".format(
