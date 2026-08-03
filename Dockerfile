@@ -30,6 +30,7 @@ COPY --chown=appuser:appgroup Segmented_Quantile/ ./Segmented_Quantile/
 COPY --chown=appuser:appgroup isolation_forest/ ./isolation_forest/
 COPY --chown=appuser:appgroup report/ ./report/
 COPY --chown=appuser:appgroup loadtest/ ./loadtest/
+COPY --chown=appuser:appgroup spot_price_exporter/ ./spot_price_exporter/
 
 USER appuser
 
