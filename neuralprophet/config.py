@@ -41,7 +41,7 @@ N_LAGS = 36
 FORECAST_MINUTES = N_FORECASTS * STEP_MINUTES
 
 # KEDA / Karpenter 스케일 변환 — infra ScaledObject 트리거 쿼리와 동기화 필요
-RPS_PER_POD = int(os.environ.get("RPS_PER_POD", "250"))
+RPS_PER_POD = int(os.environ.get("RPS_PER_POD", "150"))
 RPS_PER_CPU_CORE = int(os.environ.get("RPS_PER_CPU_CORE", "200"))
 CPU_CORES_PER_NODE = int(os.environ.get("CPU_CORES_PER_NODE", "8"))
 HEADROOM_FACTOR = float(os.environ.get("HEADROOM_FACTOR", "1.2"))
