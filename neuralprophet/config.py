@@ -17,7 +17,7 @@ PROMETHEUS_URL = os.environ.get(
 )
 PROMETHEUS_QUERY = os.environ.get(
     "PROMETHEUS_QUERY",
-    'sum(rate(http_requests_total{namespace="app",service="backend"}[5m]))',
+    'rps_cleaned{job="rps-cleaner", instance="rps-cleaner"}',
 )
 TRAIN_TIMEZONE = os.environ.get("TRAIN_TIMEZONE", "Asia/Seoul")
 TRAIN_LOOKBACK_DAYS = int(os.environ.get("TRAIN_LOOKBACK_DAYS", "30"))
