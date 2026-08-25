@@ -81,3 +81,58 @@ def push_scale_signals(
         raise RuntimeError(f"Pushgateway request failed: {exc}") from exc
 
     return result  # push 결과 dict 반환
+
+# 범용 단일 gauge push (rps-cleaner)
+def build_single_gauge_exposition(metric_name: str, value: float, help_text: str = "") -> str:
+    lines = []
+    if help_text:
+        lines.append(f"# HELP {metric_name} {help_text}")
+    lines.append(f"# TYPE {metric_name} gauge")
+    lines.append(f"{metric_name} {value}")
+    return "\n".join(lines) + "\n"
+
+
+def push_single_gauge(
+    pushgateway_url: str,
+    metric_name: str,
+    value: float,
+    *,
+    job: str,
+    instance: str,
+    help_text: str = "",
+    timeout: int = 30,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    body = build_single_gauge_exposition(metric_name, value, help_text)
+    base = pushgateway_url.rstrip("/")
+    url = f"{base}/metrics/job/{job}/instance/{instance}"
+
+    result = {
+        "pushgateway_url": pushgateway_url,
+        "job": job,
+        "instance": instance,
+        "url": url,
+        "body": body,
+        "pushed": False,
+    }
+
+    if dry_run:
+        return result
+
+    request = Request(
+        url,
+        data=body.encode("utf-8"),
+        method="PUT",
+        headers={"Content-Type": "text/plain; version=0.0.4; charset=utf-8"},
+    )
+    try:
+        with urlopen(request, timeout=timeout) as resp:
+            result["pushed"] = 200 <= resp.status < 300
+            result["status_code"] = resp.status
+    except HTTPError as exc:
+        error_body = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"Pushgateway HTTP {exc.code}: {error_body}") from exc
+    except URLError as exc:
+        raise RuntimeError(f"Pushgateway request failed: {exc}") from exc
+
+    return result
