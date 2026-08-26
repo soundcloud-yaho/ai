@@ -172,7 +172,7 @@ def main() -> None:
     parser.add_argument(
         "--val-days",
         type=float,
-        default=2,  # holdout 검증 일수 (소수 허용, 0=검증 생략 — 짧은 lookback 테스트용)
+        default=0,  # holdout 검증 일수 (소수 허용, 0=검증 생략 — 짧은 lookback 테스트용)
         help="holdout 검증 일수. 소수 허용, 0이면 전체를 학습에 쓰고 검증을 건너뛴다",
     )
     args = parser.parse_args()  # CLI 인자 파싱 완료

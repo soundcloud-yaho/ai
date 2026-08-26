@@ -20,7 +20,7 @@ PROMETHEUS_QUERY = os.environ.get(
     'rps_cleaned{job="rps-cleaner", instance="rps-cleaner"}',
 )
 TRAIN_TIMEZONE = os.environ.get("TRAIN_TIMEZONE", "Asia/Seoul")
-TRAIN_LOOKBACK_DAYS = int(os.environ.get("TRAIN_LOOKBACK_DAYS", "30"))
+TRAIN_LOOKBACK_DAYS = int(os.environ.get("TRAIN_LOOKBACK_DAYS", "1"))
 TRAIN_DATA_START = os.environ.get("TRAIN_DATA_START")  # 예: 2026-06-01T00:00:00+09:00
 
 PUSHGATEWAY_URL = os.environ.get(
