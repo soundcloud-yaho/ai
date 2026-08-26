@@ -10,7 +10,7 @@ PROMETHEUS_URL = os.environ.get(
 ) 
 PROMETHEUS_QUERY = os.environ.get( 
     "PROMETHEUS_QUERY",
-    'sum(rate(aws_applicationelb_request_count_sum{dimension_LoadBalancer="app/k8s-app-backend-5483e600d4/22efcf4cb50567d5", dimension_TargetGroup="targetgroup/k8s-app-backend-d012a4edbd/62586c85ba0829f9"}[5m]))',  # YACE 실제 라벨
+    'sum(aws_applicationelb_request_count_sum{dimension_LoadBalancer="app/k8s-app-backend-5483e600d4/22efcf4cb50567d5", dimension_TargetGroup="", dimension_AvailabilityZone=""}) / 60',
 )
 LOOKBACK_MINUTES = int(os.environ.get("LOOKBACK_MINUTES", "22"))
 
