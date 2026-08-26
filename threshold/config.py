@@ -12,7 +12,7 @@ PROMETHEUS_QUERY = os.environ.get(
     "PROMETHEUS_QUERY",
     'sum(aws_applicationelb_request_count_sum{dimension_LoadBalancer="app/k8s-app-backend-5483e600d4/22efcf4cb50567d5", dimension_TargetGroup="", dimension_AvailabilityZone=""}) / 60',
 )
-LOOKBACK_MINUTES = int(os.environ.get("LOOKBACK_MINUTES", "22"))
+LOOKBACK_MINUTES = int(os.environ.get("LOOKBACK_MINUTES", "22")) 
 
 PUSHGATEWAY_URL = os.environ.get(
     "PUSHGATEWAY_URL",
