@@ -7,7 +7,7 @@ OUTPUT_DIR = Path(os.environ.get("THRESHOLD_OUTPUT_DIR", BASE_DIR / "output"))
 PROMETHEUS_URL = os.environ.get(
     "PROMETHEUS_URL",
     "http://kube-prometheus-stack-prometheus.monitoring.svc:9090",
-)
+) 
 PROMETHEUS_QUERY = os.environ.get(
     "PROMETHEUS_QUERY",
     'sum(rate(aws_applicationelb_request_count_sum{dimension_LoadBalancer="app/k8s-app-backend-5483e600d4/22efcf4cb50567d5", dimension_TargetGroup="targetgroup/k8s-app-backend-d012a4edbd/62586c85ba0829f9"}[5m]))',  # YACE 실제 라벨
